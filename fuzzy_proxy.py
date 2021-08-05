@@ -19,6 +19,7 @@ RANCHER_AUTHORIZATION = 'Basic ' + base64.b64encode(
 ).decode('ascii')
 RANCHER_CLUSTER_ID = os.environ['RANCHER_CLUSTER_ID']
 RANCHER_PROJECT_ID = os.environ['RANCHER_PROJECT_ID']
+REDIRECT_CODE = int(os.environ.get('REDIRECT_CODE') or 302)
 
 def get_rules():
   req = urllib.request.urlopen(
@@ -68,7 +69,7 @@ def index(path):
       )
     )
     print(request.url, ' => ', new_url)
-    return redirect(new_url, code=301)
+    return redirect(new_url, code=REDIRECT_CODE)
   except Exception as e:
     print(e)
     return not_found()
