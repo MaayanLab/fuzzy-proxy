@@ -1,81 +1,77 @@
 import os
-import ssl
-import json
-import base64
 import urllib.request, urllib.parse
+from kubernetes import client, config
 from dotenv import load_dotenv
 from difflib import SequenceMatcher as SM
-from flask import Flask, redirect, request
+from flask import Flask, abort, redirect, request
 
 app = Flask(__name__)
 
 load_dotenv(override=True)
-context = ssl._create_unverified_context()
 
-# RANCHER SPECIFIC
-BASE_RANCHER_URL = os.environ['RANCHER_URL']
-RANCHER_AUTHORIZATION = 'Basic ' + base64.b64encode(
-  (os.environ['RANCHER_TOKEN'] + ':' + os.environ['RANCHER_SECRET']).encode()
-).decode('ascii')
-RANCHER_CLUSTER_ID = os.environ['RANCHER_CLUSTER_ID']
-RANCHER_PROJECT_ID = os.environ['RANCHER_PROJECT_ID']
+NAMESPACE = os.environ.get('KUBE_NAMESPACE', 'default')
 REDIRECT_CODE = int(os.environ.get('REDIRECT_CODE') or 302)
 
-def get_rules():
-  req = urllib.request.urlopen(
-    urllib.request.Request(
-      BASE_RANCHER_URL + '/v3/project/{clusterId}:{projectId}/ingresses'.format(clusterId=RANCHER_CLUSTER_ID, projectId=RANCHER_PROJECT_ID),
-      method='GET',
-      headers={
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': RANCHER_AUTHORIZATION,
-      },
-    ),
-    context=context,
-  )
-  data = json.loads(req.read().decode('utf-8'))
+def get_urls():
+  try:
+    config.load_incluster_config()
+  except:
+    config.load_kube_config()
+  networking_v1 = client.NetworkingV1Api()
+  if NAMESPACE == '*':
+    ingresses = networking_v1.list_ingress_for_all_namespaces()
+  else:
+    ingresses = networking_v1.list_namespaced_ingress(NAMESPACE)
   return {
-    d['id']: r['host'] + p['path']
-    for d in data['data']
-    for r in d['rules']
-    for p in r['paths']
-    if p.get('path')
+    ingress.metadata.annotations['maayanlab.cloud/ingress']
+    for ingress in ingresses.items
+    if ingress.metadata.annotations.get('maayanlab.cloud/ingress')
   }
 
 # GENERIC
 
-def similarity_query(query, rules):
-  return [
-    (SM(a=query.lower(), b=value.lower()).ratio(), key)
-    for key, value in rules.items()
-  ]
+def best_match(query, urls):
+  query_parsed = urllib.parse.urlparse(query)
+  query_parts = list(filter(None, query_parsed.path.strip('/').split('/')))
+  candidates = []
+  for url in urls:
+    url_parsed = urllib.parse.urlparse(url)
+    if url_parsed.scheme.lower() != query_parsed.scheme.lower(): continue
+    if url_parsed.hostname.lower() != query_parsed.hostname.lower(): continue
+    if not url_parsed.path.strip('/'): continue
+    url_parts = url_parsed.path.strip('/').split('/')
+    if len(url_parts) > len(query_parts): continue
+    candidates.append((
+      sum(
+        SM(a=query_part.lower(), b=url_part.lower()).ratio()
+        for query_part, url_part in zip(query_parts, url_parts)
+      )/len(url_parts),
+      '/'.join(['', *url_parts, *query_parts[len(url_parts):], *(
+        # add trailing slash if it's in the query or in the ingress
+        [''] if query_parsed.path.endswith('/') or url_parsed.path.endswith('/') else []
+      )]),
+    ))
+  if not candidates: return
+  _top_score, new_path = max(candidates)
+  new_url = urllib.parse.urlunparse(
+    query_parsed._replace(
+      path=new_path,
+    )
+  )
+  return new_url
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def index(path):
   try:
-    rules = get_rules()
-    parsed_url = urllib.parse.urlparse(request.url)
-    parsed_url_base_path = '/' + parsed_url.path[1:].split('/')[0]
-    parsed_url_remaining_path = '/' + '/'.join(parsed_url.path[1:].split('/')[1:])
-    similar = similarity_query(parsed_url.hostname + parsed_url_base_path, rules)
-    top = max(similar)[1]
-    top_url = rules[top].split('/')
-    new_url = urllib.parse.urlunparse(
-      parsed_url._replace(
-        netloc=top_url[0],
-        path=top_url[1] + parsed_url_remaining_path,
-      )
-    )
+    urls = get_urls()
+    new_url = best_match(request.url, urls)
+    assert new_url is not None
     print(request.url, ' => ', new_url)
     return redirect(new_url, code=REDIRECT_CODE)
   except Exception as e:
     print(e)
-    return not_found()
-
-def not_found():
-  return 'Page not found'
+    abort(404)
 
 if __name__ == '__main__':
   port = int(os.environ.get('PORT', 5000))

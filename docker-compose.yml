@@ -2,13 +2,9 @@ version: '3'
 services:
   fuzzy-proxy:
     build: .
-    image: maayanlab/fuzzy-proxy:1.0.6
+    image: maayanlab/fuzzy-proxy:1.1.3
     # environment:
-    # - RANCHER_URL=
-    # - RANCHER_TOKEN=
-    # - RANCHER_SECRET=
-    # - RANCHER_CLUSTER_ID=
-    # - RANCHER_PROJECT_ID=
+    # KUBE_NAMESPACE=
     # - REDIRECT_CODE=
     ports:
       - 80:80
