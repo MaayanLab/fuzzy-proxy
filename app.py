@@ -1,5 +1,6 @@
 import os
 import urllib.request, urllib.parse
+import traceback
 from kubernetes import client, config
 from dotenv import load_dotenv
 from difflib import SequenceMatcher as SM
@@ -70,8 +71,9 @@ def index(path):
     assert new_url is not None
     print(request.url, ' => ', new_url)
     return redirect(new_url, code=REDIRECT_CODE)
-  except Exception as e:
-    print(e)
+  except Exception:
+    print(request.url)
+    traceback.print_exc()
     abort(404)
 
 if __name__ == '__main__':
