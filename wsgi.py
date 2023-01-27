@@ -1,1 +1,0 @@
-from fuzzy_proxy import app as application

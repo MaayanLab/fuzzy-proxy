@@ -2,9 +2,9 @@ version: '3'
 services:
   fuzzy-proxy:
     build: .
-    image: maayanlab/fuzzy-proxy:1.1.3
+    image: maayanlab/fuzzy-proxy:1.2.0
     # environment:
     # KUBE_NAMESPACE=
     # - REDIRECT_CODE=
     ports:
-      - 80:80
+      - 80:8080

@@ -34,7 +34,7 @@ spec:
   - name: http
     port: 80
     protocol: TCP
-    targetPort: 80
+    targetPort: 8080
   selector:
     workload.user.cattle.io/workloadselector: deployment-fuzzy-proxy
 ---
@@ -54,7 +54,7 @@ spec:
     spec:
       containers:
       - name: fuzzy-proxy
-        image: maayanlab/fuzzy-proxy:1.1.3
+        image: maayanlab/fuzzy-proxy:1.2.0
         imagePullPolicy: IfNotPresent
         tty: true
         env:
