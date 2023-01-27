@@ -36,7 +36,6 @@ def best_match(query, urls):
   candidates = []
   for url in urls:
     url_parsed = urllib.parse.urlparse(url)
-    if url_parsed.scheme.lower() != query_parsed.scheme.lower(): continue
     if url_parsed.hostname.lower() != query_parsed.hostname.lower(): continue
     if not url_parsed.path.strip('/'): continue
     url_parts = url_parsed.path.strip('/').split('/')
@@ -46,15 +45,17 @@ def best_match(query, urls):
         SM(a=query_part.lower(), b=url_part.lower()).ratio()
         for query_part, url_part in zip(query_parts, url_parts)
       )/len(url_parts),
+      url_parsed.scheme,
       '/'.join(['', *url_parts, *query_parts[len(url_parts):], *(
         # add trailing slash if it's in the query or in the ingress
         [''] if query_parsed.path.endswith('/') or url_parsed.path.endswith('/') else []
       )]),
     ))
   if not candidates: return
-  _top_score, new_path = max(candidates)
+  _top_score, new_scheme, new_path = max(candidates)
   new_url = urllib.parse.urlunparse(
     query_parsed._replace(
+      scheme=new_scheme,
       path=new_path,
     )
   )
