@@ -2,7 +2,7 @@ version: '3'
 services:
   fuzzy-proxy:
     build: .
-    image: maayanlab/fuzzy-proxy:1.2.0
+    image: maayanlab/fuzzy-proxy:1.2.5
     # environment:
     # KUBE_NAMESPACE=
     # - REDIRECT_CODE=
