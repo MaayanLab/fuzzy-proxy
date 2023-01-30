@@ -12,6 +12,7 @@ load_dotenv(override=True)
 
 NAMESPACE = os.environ.get('KUBE_NAMESPACE', 'default')
 REDIRECT_CODE = int(os.environ.get('REDIRECT_CODE') or 302)
+ANNOTATION_KEY = os.environ.get('ANNOTATION_KEY', 'maayanlab.cloud/ingress')
 
 def get_urls():
   try:
@@ -24,9 +25,9 @@ def get_urls():
   else:
     ingresses = networking_v1.list_namespaced_ingress(NAMESPACE)
   return {
-    ingress.metadata.annotations['maayanlab.cloud/ingress']
+    ingress.metadata.annotations[ANNOTATION_KEY]
     for ingress in ingresses.items
-    if ingress.metadata.annotations.get('maayanlab.cloud/ingress')
+    if ingress.metadata.annotations.get(ANNOTATION_KEY)
   }
 
 # GENERIC
