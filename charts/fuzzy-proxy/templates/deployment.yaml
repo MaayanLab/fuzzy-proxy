@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  annotations: {{ ((.Values.deployment|default dict).annotations|default dict) | toJson }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: fuzzy-proxy
+        image: {{ .Values.image.repository | default "maayanlab/fuzzy-proxy" }}:{{ .Values.image.tag | default .Chart.Version }}
+        imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+        env:
+        - name: KUBE_NAMESPACE
+          {{- if .Values.watchNamespace }}
+          value: {{ .Values.watchNamespace | quote }}
+          {{- else }}
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+          {{- end }}
+        - name: ANNOTATION_KEY
+          value: {{ index .Values "annotationKey" }}
+        ports:
+        - name: http
+          protocol: TCP
+          containerPort: 8080
+        tty: true
+      restartPolicy: Always
+      serviceAccount: {{ .Release.Name }}

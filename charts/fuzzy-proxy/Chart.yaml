@@ -1,0 +1,4 @@
+apiVersion: v2
+name: fuzzy-proxy
+version: 1.2.5
+description: A catch-all redirect for misspelled urls

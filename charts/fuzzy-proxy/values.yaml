@@ -1,0 +1,24 @@
+image:
+  pullPolicy: IfNotPresent
+  repository: maayanlab/fuzzy-proxy
+  tag:
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+
+service:
+  create: true
+
+deployment:
+  annotations:
+    maayanlab.cloud/ingress: https://maayanlab.cloud
+
+annotationKey: maayanlab.cloud/ingress
+
+# for deployment namespace
+watchNamespace:
+# for all namespaces
+# watchNamespace: '*'
