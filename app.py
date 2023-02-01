@@ -13,7 +13,7 @@ load_dotenv(override=True)
 
 NAMESPACE = os.environ.get('KUBE_NAMESPACE', 'default')
 REDIRECT_CODE = int(os.environ.get('REDIRECT_CODE') or 302)
-REDIRECT_HEADERS = json.load(os.environ.get('REDIRECT_HEADERS') or '{}')
+REDIRECT_HEADERS = json.loads(os.environ.get('REDIRECT_HEADERS') or '{}')
 ANNOTATION_KEY = os.environ.get('ANNOTATION_KEY', 'maayanlab.cloud/ingress')
 
 def get_urls():
@@ -65,8 +65,8 @@ def best_match(query, urls):
   )
   return new_url
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'HEAD'])
+@app.route('/<path:path>', methods=['GET', 'POST', 'HEAD'])
 def index(path):
   try:
     urls = get_urls()
