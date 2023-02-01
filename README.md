@@ -9,8 +9,3 @@ It works better with case sensitive ingress matchers (allowing case to be correc
 
 ## Environment settings
 Uses a .env file during development (or just load the environment).
-
-```env
-KUBE_NAMESPACE=
-REDIRECT_CODE=
-```

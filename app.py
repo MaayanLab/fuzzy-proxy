@@ -1,6 +1,7 @@
 import os
 import urllib.request, urllib.parse
 import traceback
+import json
 from kubernetes import client, config
 from dotenv import load_dotenv
 from difflib import SequenceMatcher as SM
@@ -12,6 +13,7 @@ load_dotenv(override=True)
 
 NAMESPACE = os.environ.get('KUBE_NAMESPACE', 'default')
 REDIRECT_CODE = int(os.environ.get('REDIRECT_CODE') or 302)
+REDIRECT_HEADERS = json.load(os.environ.get('REDIRECT_HEADERS') or '{}')
 ANNOTATION_KEY = os.environ.get('ANNOTATION_KEY', 'maayanlab.cloud/ingress')
 
 def get_urls():
@@ -71,7 +73,9 @@ def index(path):
     new_url = best_match(request.url, urls)
     assert new_url is not None
     print(request.url, ' => ', new_url)
-    return redirect(new_url, code=REDIRECT_CODE)
+    response = redirect(new_url, code=REDIRECT_CODE)
+    response.headers.update(REDIRECT_HEADERS)
+    return response
   except Exception:
     print(request.url)
     traceback.print_exc()
